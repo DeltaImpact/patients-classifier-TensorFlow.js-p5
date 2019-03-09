@@ -34,7 +34,7 @@ let labelList = [
   "grey-ish"
 ];
 
-let patientsLabelList = ["болен", "здоров"];
+let patientsLabelList = ["Болен", "Здоров"];
 
 function preload() {
   data = loadJSON("colorData.json");
@@ -229,21 +229,22 @@ function setup() {
     patientPlateletsSlider.y + distanceBetweenSliders
   );
 
+  labelP = createP("label");
+  labelP.position(patientHematocritSlider.x, patientHematocritSlider.y + distanceBetweenSliders);
+
   // rSlider = createSlider(0, 255, 255);
   // gSlider = createSlider(0, 255, 0);
   // bSlider = createSlider(0, 255, 255);
 
   rSlider = createSlider(0, 255, 169);
   rSlider.position(
-    patientHematocritSlider.x,
-    patientHematocritSlider.y + distanceBetweenSliders + 20
+    labelP.x,
+    labelP.y + distanceBetweenSliders + 50
   );
   gSlider = createSlider(0, 255, 182);
   gSlider.position(rSlider.x, rSlider.y + distanceBetweenSliders);
   bSlider = createSlider(0, 255, 191);
   bSlider.position(gSlider.x, gSlider.y + distanceBetweenSliders);
-  labelP = createP("label");
-  labelP.position(bSlider.x, bSlider.y + distanceBetweenSliders);
 
   let normalizedPatients = [];
   let patientsLabels = [];
@@ -321,7 +322,7 @@ async function train() {
     epochs: 1000,
     callbacks: {
       onEpochEnd: (epoch, logs) => {
-        console.log(epoch);
+        // console.log(epoch);
         // lossP.html("loss: " + logs.loss.toFixed(5) + "</br>epoch: " + epoch);
         lossP.html("Ошибка: " + logs.loss.toFixed(5));
         epochP.html("Поколение: " + epoch);
@@ -334,6 +335,60 @@ async function train() {
       }
     }
   });
+}
+
+function getNormalizedSlidersValues() {
+  let patientHeight =
+    patientHeightSlider.value() / patientWithHighestValues["Рост"];
+  let patientWeight =
+    patientWeightSlider.value() / patientWithHighestValues["Вес"];
+  let patientLowerPressure =
+    patientLowerPressureSlider.value() /
+    patientWithHighestValues["Давление нижн."];
+  let patientUpwardPressure =
+    patientUpwardPressureSlider.value() /
+    patientWithHighestValues["Давление верх."];
+  let patientTemperature =
+    patientTemperatureSlider.value() /
+    10 /
+    patientWithHighestValues["Температура"];
+  let patientPulse =
+    patientPulseSlider.value() / patientWithHighestValues["Пульс"];
+  let patientWhiteBloodCells =
+    patientWhiteBloodCellsSlider.value() /
+    patientWithHighestValues["Лейкоциты"];
+  let patientESR = patientESRSlider.value() / patientWithHighestValues["СОЭ"];
+  let patientMyoglobin =
+    patientMyoglobinSlider.value() / patientWithHighestValues["Миоглобин"];
+  let patientCholesterol =
+    patientCholesterolSlider.value() / patientWithHighestValues["Холестирин"];
+  let patientHemoglobin =
+    patientHemoglobinSlider.value() / patientWithHighestValues["Гемоглобин"];
+  let patientNeutrophils =
+    patientNeutrophilsSlider.value() / patientWithHighestValues["Нейтрофилы"];
+  let patientPlatelets =
+    patientPlateletsSlider.value() / patientWithHighestValues["Тромбоциты"];
+  let patientHematocrit =
+    patientHematocritSlider.value() / patientWithHighestValues["Гематокрит"];
+
+  return [
+    [
+      patientHeight,
+      patientWeight,
+      patientLowerPressure,
+      patientUpwardPressure,
+      patientTemperature,
+      patientPulse,
+      patientWhiteBloodCells,
+      patientESR,
+      patientMyoglobin,
+      patientCholesterol,
+      patientHemoglobin,
+      patientNeutrophils,
+      patientPlatelets,
+      patientHematocrit
+    ]
+  ];
 }
 
 function draw() {
@@ -424,13 +479,16 @@ function draw() {
 
   strokeWeight(2);
   stroke(255);
+
   // line(frameCount % width, 0, frameCount % width, height);
-  // tf.tidy(() => {
-  //   const input = tf.tensor2d([[r, g, b]]);
-  //   let results = model.predict(input);
-  //   let argMax = results.argMax(1);
-  //   let index = argMax.dataSync()[0];
-  //   let label = labelList[index];
-  //   labelP.html(label);
-  // });
+  tf.tidy(() => {
+    const input = tf.tensor2d(getNormalizedSlidersValues());
+    // const input = tf.tensor2d([[r, g, b]]);
+    let results = model.predict(input);
+    let argMax = results.argMax(1);
+    let index = argMax.dataSync()[0];
+    // let label = labelList[index];
+    // labelP.html(label);
+    labelP.html(patientsLabelList[index]);
+  });
 }
