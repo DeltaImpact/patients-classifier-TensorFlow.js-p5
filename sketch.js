@@ -34,40 +34,11 @@ let labelList = [
   "grey-ish"
 ];
 
-let patientsLabelList = ["здоров", "болен"];
+let patientsLabelList = ["болен", "здоров"];
 
 function preload() {
   data = loadJSON("colorData.json");
   patients = loadJSON("patients.json");
-
-  let asd = typeof patients;
-
-  let asd3 = Object.values(patients);
-  // debugger
-
-  // for (let patient of patients) {
-  //   console.log(patient);
-  //   debugger
-  // }
-
-  var lowest = Number.POSITIVE_INFINITY;
-  var highest = Number.NEGATIVE_INFINITY;
-
-  // var tmp;
-  // for (let i = patients.length - 1; i >= 0; i--) {
-  //   debugger;
-
-  //   Object.keys(patients[i]).forEach(function(key, index) {
-  //     debugger;
-  //     // key: the name of the object key
-  //     // index: the ordinal position of the key within the object
-  //   });
-  //   // tmp = patients[i].Cost;
-  //   // if (tmp < lowest) lowest = tmp;
-  //   // if (tmp > highest) highest = tmp;
-  // }
-  // console.log(patients);
-  // debugger
 }
 
 function setup() {
@@ -120,7 +91,7 @@ function setup() {
         patientWithHighestValues[key] = value;
     });
   }
-  console.log("Минимальные значения", patientWithLowestValues );
+  console.log("Минимальные значения", patientWithLowestValues);
   console.log("Максимальные значения", patientWithHighestValues);
   // debugger;
 
@@ -274,17 +245,45 @@ function setup() {
   labelP = createP("label");
   labelP.position(bSlider.x, bSlider.y + distanceBetweenSliders);
 
-  let colors = [];
-  let labels = [];
-  for (let record of data.entries) {
-    let col = [record.r / 255, record.g / 255, record.b / 255];
-    colors.push(col);
-    labels.push(labelList.indexOf(record.label));
+  let normalizedPatients = [];
+  let patientsLabels = [];
+  for (let patient of patients.entries) {
+    let normalizedPatient = [
+      patient["Рост"] / patientWithHighestValues["Рост"],
+      patient["Вес"] / patientWithHighestValues["Вес"],
+      patient["Давление нижн."] / patientWithHighestValues["Давление нижн."],
+      patient["Давление верх."] / patientWithHighestValues["Давление верх."],
+      patient["Температура"] / patientWithHighestValues["Температура"],
+      patient["Пульс"] / patientWithHighestValues["Пульс"],
+      patient["Лейкоциты"] / patientWithHighestValues["Лейкоциты"],
+      patient["СОЭ"] / patientWithHighestValues["СОЭ"],
+      patient["Миоглобин"] / patientWithHighestValues["Миоглобин"],
+      patient["Холестирин"] / patientWithHighestValues["Холестирин"],
+      patient["Гемоглобин"] / patientWithHighestValues["Гемоглобин"],
+      patient["Нейтрофилы"] / patientWithHighestValues["Нейтрофилы"],
+      patient["Тромбоциты"] / patientWithHighestValues["Тромбоциты"],
+      patient["Гематокрит"] / patientWithHighestValues["Гематокрит"]
+    ];
+    normalizedPatients.push(normalizedPatient);
+    patientsLabels.push(patient["Здоров"]);
   }
-  // debugger;
 
-  xs = tf.tensor2d(colors);
-  let labelsTensor = tf.tensor1d(labels, "int32");
+  // let colors = [];
+  // let labels = [];
+  // console.log(normalizedPatients);
+  // console.log(patientsLabels);
+  // console.log(colors);
+  // console.log(labels);
+  // for (let record of data.entries) {
+  //   let col = [record.r / 255, record.g / 255, record.b / 255];
+  //   colors.push(col);
+  //   labels.push(labelList.indexOf(record.label));
+  // }
+  // debugger;
+  xs = tf.tensor2d(normalizedPatients);
+  let labelsTensor = tf.tensor1d(patientsLabels, "int32");
+  // xs = tf.tensor2d(colors);
+  // let labelsTensor = tf.tensor1d(labels, "int32");
 
   ys = tf.oneHot(labelsTensor, 9).cast("float32");
   labelsTensor.dispose();
@@ -292,7 +291,7 @@ function setup() {
   model = tf.sequential();
   const hidden = tf.layers.dense({
     units: 16,
-    inputShape: [3],
+    inputShape: [14],
     activation: "sigmoid"
   });
   const output = tf.layers.dense({
@@ -319,7 +318,7 @@ async function train() {
   await model.fit(xs, ys, {
     shuffle: true,
     validationSplit: 0.1,
-    epochs: 100,
+    epochs: 1000,
     callbacks: {
       onEpochEnd: (epoch, logs) => {
         console.log(epoch);
@@ -341,11 +340,12 @@ function draw() {
   // console.log(patientHeightSlider.y);
   // console.log(patientHeightSlider.x * 2 + patientHeightSlider.width);
 
-  let r = rSlider.value();
-  let g = gSlider.value();
-  let b = bSlider.value();
+  // let r = rSlider.value();
+  // let g = gSlider.value();
+  // let b = bSlider.value();
   // console.log(b);
-  background(r, g, b);
+  // background(r, g, b);
+  background(255, 255, 255);
   text(
     "Рост " + patientHeightSlider.value(),
     patientHeightSlider.x + patientHeightSlider.width,
@@ -424,13 +424,13 @@ function draw() {
 
   strokeWeight(2);
   stroke(255);
-  line(frameCount % width, 0, frameCount % width, height);
-  tf.tidy(() => {
-    const input = tf.tensor2d([[r, g, b]]);
-    let results = model.predict(input);
-    let argMax = results.argMax(1);
-    let index = argMax.dataSync()[0];
-    let label = labelList[index];
-    labelP.html(label);
-  });
+  // line(frameCount % width, 0, frameCount % width, height);
+  // tf.tidy(() => {
+  //   const input = tf.tensor2d([[r, g, b]]);
+  //   let results = model.predict(input);
+  //   let argMax = results.argMax(1);
+  //   let index = argMax.dataSync()[0];
+  //   let label = labelList[index];
+  //   labelP.html(label);
+  // });
 }
