@@ -1,4 +1,3 @@
-let data;
 let patients;
 let patientWithLowestValues, patientWithHighestValues;
 let model;
@@ -36,7 +35,6 @@ let labelList = [
 let patientsLabelList = ["Болен", "Здоров"];
 
 function preload() {
-  data = loadJSON("colorData.json");
   patients = loadJSON("patients.json");
 }
 
