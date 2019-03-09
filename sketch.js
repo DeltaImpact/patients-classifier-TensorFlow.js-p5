@@ -3,7 +3,6 @@ let patients;
 let patientWithLowestValues, patientWithHighestValues;
 let model;
 let xs, ys;
-let rSlider, gSlider, bSlider;
 let patientHeightSlider,
   patientWeightSlider,
   patientLowerPressureSlider,
@@ -93,7 +92,6 @@ function setup() {
   }
   console.log("Минимальные значения", patientWithLowestValues);
   console.log("Максимальные значения", patientWithHighestValues);
-  // debugger;
 
   let distanceBetweenSliders = 30;
   // Crude interface
@@ -230,21 +228,10 @@ function setup() {
   );
 
   labelP = createP("label");
-  labelP.position(patientHematocritSlider.x, patientHematocritSlider.y + distanceBetweenSliders);
-
-  // rSlider = createSlider(0, 255, 255);
-  // gSlider = createSlider(0, 255, 0);
-  // bSlider = createSlider(0, 255, 255);
-
-  rSlider = createSlider(0, 255, 169);
-  rSlider.position(
-    labelP.x,
-    labelP.y + distanceBetweenSliders + 50
+  labelP.position(
+    patientHematocritSlider.x,
+    patientHematocritSlider.y + distanceBetweenSliders
   );
-  gSlider = createSlider(0, 255, 182);
-  gSlider.position(rSlider.x, rSlider.y + distanceBetweenSliders);
-  bSlider = createSlider(0, 255, 191);
-  bSlider.position(gSlider.x, gSlider.y + distanceBetweenSliders);
 
   let normalizedPatients = [];
   let patientsLabels = [];
@@ -269,22 +256,8 @@ function setup() {
     patientsLabels.push(patient["Здоров"]);
   }
 
-  // let colors = [];
-  // let labels = [];
-  // console.log(normalizedPatients);
-  // console.log(patientsLabels);
-  // console.log(colors);
-  // console.log(labels);
-  // for (let record of data.entries) {
-  //   let col = [record.r / 255, record.g / 255, record.b / 255];
-  //   colors.push(col);
-  //   labels.push(labelList.indexOf(record.label));
-  // }
-  // debugger;
   xs = tf.tensor2d(normalizedPatients);
   let labelsTensor = tf.tensor1d(patientsLabels, "int32");
-  // xs = tf.tensor2d(colors);
-  // let labelsTensor = tf.tensor1d(labels, "int32");
 
   ys = tf.oneHot(labelsTensor, 9).cast("float32");
   labelsTensor.dispose();
@@ -319,13 +292,11 @@ async function train() {
   await model.fit(xs, ys, {
     shuffle: true,
     validationSplit: 0.1,
-    epochs: 1000,
+    epochs: 3000,
     callbacks: {
       onEpochEnd: (epoch, logs) => {
-        // console.log(epoch);
-        // lossP.html("loss: " + logs.loss.toFixed(5) + "</br>epoch: " + epoch);
-        lossP.html("Ошибка: " + logs.loss.toFixed(5));
-        epochP.html("Поколение: " + epoch);
+        lossP.html("Логлосс: " + logs.loss.toFixed(5));
+        epochP.html("Поколение: " + (epoch + 1));
       },
       onBatchEnd: async (batch, logs) => {
         await tf.nextFrame();
@@ -392,13 +363,6 @@ function getNormalizedSlidersValues() {
 }
 
 function draw() {
-  // console.log(patientHeightSlider.y);
-  // console.log(patientHeightSlider.x * 2 + patientHeightSlider.width);
-
-  // let r = rSlider.value();
-  // let g = gSlider.value();
-  // let b = bSlider.value();
-  // console.log(b);
   // background(r, g, b);
   background(255, 255, 255);
   text(
@@ -473,22 +437,15 @@ function draw() {
     patientHematocritSlider.y + 10
   );
 
-  text("red", rSlider.x * 2 + rSlider.width, rSlider.y + 10);
-  text("green", gSlider.x * 2 + gSlider.width, gSlider.y + 10);
-  text("blue", bSlider.x * 2 + bSlider.width, bSlider.y + 10);
-
   strokeWeight(2);
   stroke(255);
 
   // line(frameCount % width, 0, frameCount % width, height);
   tf.tidy(() => {
     const input = tf.tensor2d(getNormalizedSlidersValues());
-    // const input = tf.tensor2d([[r, g, b]]);
     let results = model.predict(input);
     let argMax = results.argMax(1);
     let index = argMax.dataSync()[0];
-    // let label = labelList[index];
-    // labelP.html(label);
     labelP.html(patientsLabelList[index]);
   });
 }
