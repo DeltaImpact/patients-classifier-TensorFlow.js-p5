@@ -30,42 +30,8 @@ function setup() {
   createCanvas(1000, 1200);
   textSize(15);
   noStroke();
-  patientWithLowestValues = {
-    Здоров: Number.POSITIVE_INFINITY,
-    Рост: Number.POSITIVE_INFINITY,
-    Вес: Number.POSITIVE_INFINITY,
-    "Давление нижн.": Number.POSITIVE_INFINITY,
-    "Давление верх.": Number.POSITIVE_INFINITY,
-    Температура: Number.POSITIVE_INFINITY,
-    Пульс: Number.POSITIVE_INFINITY,
-    Лейкоциты: Number.POSITIVE_INFINITY,
-    СОЭ: Number.POSITIVE_INFINITY,
-    Миоглобин: Number.POSITIVE_INFINITY,
-    Холестирин: Number.POSITIVE_INFINITY,
-    Гемоглобин: Number.POSITIVE_INFINITY,
-    Нейтрофилы: Number.POSITIVE_INFINITY,
-    Тромбоциты: Number.POSITIVE_INFINITY,
-    Гематокрит: Number.POSITIVE_INFINITY
-  };
-  patientWithHighestValues = {
-    Здоров: Number.NEGATIVE_INFINITY,
-    Рост: Number.NEGATIVE_INFINITY,
-    Вес: Number.NEGATIVE_INFINITY,
-    "Давление нижн.": Number.NEGATIVE_INFINITY,
-    "Давление верх.": Number.NEGATIVE_INFINITY,
-    Температура: Number.NEGATIVE_INFINITY,
-    Пульс: Number.NEGATIVE_INFINITY,
-    Лейкоциты: Number.NEGATIVE_INFINITY,
-    СОЭ: Number.NEGATIVE_INFINITY,
-    Миоглобин: Number.NEGATIVE_INFINITY,
-    Холестирин: Number.NEGATIVE_INFINITY,
-    Гемоглобин: Number.NEGATIVE_INFINITY,
-    Нейтрофилы: Number.NEGATIVE_INFINITY,
-    Тромбоциты: Number.NEGATIVE_INFINITY,
-    Гематокрит: Number.NEGATIVE_INFINITY
-  };
-  // patientWithLowestValues = Object.create(patients.entries[0]);
-  // patientWithHighestValues = Object.create(patients.entries[0]);
+  patientWithLowestValues = { ...patients.entries[0] };
+  patientWithHighestValues = { ...patients.entries[0] };
   for (let patient of patients.entries) {
     Object.keys(patient).forEach(function(key, index) {
       let value = patient[key];
