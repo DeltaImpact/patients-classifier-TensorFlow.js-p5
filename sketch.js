@@ -1,4 +1,7 @@
 let patients;
+let patientsLabelList = ["Болен", "Здоров"];
+let normalizedPatients = [];
+let patientsLabels = [];
 let patientWithLowestValues, patientWithHighestValues;
 let model;
 let xs, ys;
@@ -19,15 +22,17 @@ let patientHeightSlider,
 
 let labelP;
 let lossP, epochP;
+let modelEpoch;
 
-let patientsLabelList = ["Болен", "Здоров"];
+let colorHealthy = "#859900";
+let colorIll = "#dc322f";
 
 function preload() {
   patients = loadJSON("patients.json");
 }
 
 function setup() {
-  createCanvas(1000, 1200);
+  createCanvas(1000, 1500);
   textSize(15);
   noStroke();
   patientWithLowestValues = { ...patients.entries[0] };
@@ -46,9 +51,8 @@ function setup() {
   console.log("Максимальные значения", patientWithHighestValues);
 
   let distanceBetweenSliders = 30;
-  // Crude interface
   lossP = createP("loss");
-  lossP.position(10, 10);
+  lossP.position(20, 10);
   epochP = createP("epoch");
   epochP.position(lossP.x, lossP.y + distanceBetweenSliders);
 
@@ -180,13 +184,8 @@ function setup() {
   );
 
   labelP = createP("label");
-  labelP.position(
-    patientHematocritSlider.x,
-    patientHematocritSlider.y + distanceBetweenSliders
-  );
+  labelP.position(patientHematocritSlider.x, patientHematocritSlider.y + 10);
 
-  let normalizedPatients = [];
-  let patientsLabels = [];
   for (let patient of patients.entries) {
     let normalizedPatient = [
       patient["Рост"] / patientWithHighestValues["Рост"],
@@ -244,11 +243,12 @@ async function train() {
   await model.fit(xs, ys, {
     shuffle: true,
     validationSplit: 0.1,
-    epochs: 3000,
+    epochs: 1500,
     callbacks: {
       onEpochEnd: (epoch, logs) => {
         lossP.html("Логлосс: " + logs.loss.toFixed(5));
         epochP.html("Поколение: " + (epoch + 1));
+        modelEpoch = epoch;
       },
       onBatchEnd: async (batch, logs) => {
         await tf.nextFrame();
@@ -315,7 +315,6 @@ function getNormalizedSlidersValues() {
 }
 
 function draw() {
-  // background(r, g, b);
   background(255, 255, 255);
   text(
     "Рост " + patientHeightSlider.value(),
@@ -392,12 +391,133 @@ function draw() {
   strokeWeight(2);
   stroke(255);
 
-  // line(frameCount % width, 0, frameCount % width, height);
   tf.tidy(() => {
     const input = tf.tensor2d(getNormalizedSlidersValues());
     let results = model.predict(input);
     let argMax = results.argMax(1);
     let index = argMax.dataSync()[0];
+    if (index == 1) {
+      fill(color(colorHealthy));
+    }
+
+    if (index == 0) {
+      fill(color(colorIll));
+    }
+
+    rect(
+      0,
+      patientHeightSlider.y - 7,
+      lossP.x - 10,
+      labelP.y +
+        labelP.height -
+        patientHeightSlider.y +
+        patientHeightSlider.height
+    );
+    fill(0, 0, 0);
     labelP.html(patientsLabelList[index]);
   });
+
+  let healthyGroupX = 400;
+  let illGroupX = 600;
+  let GroupUnderscoreWidth = 100;
+  let GroupUnderscoreHeight = 5;
+  text("Здоровые", healthyGroupX, patientHeightSlider.y + 10);
+  fill(color(colorHealthy));
+  let healthyGroupHeader = rect(
+    healthyGroupX,
+    patientHeightSlider.y + 15,
+    GroupUnderscoreWidth,
+    GroupUnderscoreHeight
+  );
+  fill(0, 0, 0);
+  text("Больные", illGroupX, patientHeightSlider.y + 10);
+  fill(color(colorIll));
+  let illGroupHeader = rect(
+    illGroupX,
+    patientHeightSlider.y + 15,
+    GroupUnderscoreWidth,
+    GroupUnderscoreHeight
+  );
+  fill(0, 0, 0);
+
+  if (modelEpoch > 10) {
+    tf.tidy(() => {
+      const input = tf.tensor2d(normalizedPatients);
+      let results = model.predict(input);
+      let argMax = results.argMax(1);
+      let index = argMax.dataSync();
+
+      let isValid = true;
+      for (let entity of index) {
+        if (entity != 0 && entity != 1) {
+          isValid = false;
+        }
+      }
+
+      let distanceBetweenElementsOfList = 20;
+      let illGroupLastIndex = 0,
+        healthyGroupLastIndex = 0;
+
+      if (isValid) {
+        index.forEach(function(item, index, arr) {
+          let patient = patients.entries[index];
+          let patientHealth = patient["Здоров"];
+          let patientPredictedHealth = item;
+          if (patientHealth == 1) {
+            fill(color(colorHealthy));
+          }
+          if (patientHealth == 0) {
+            fill(color(colorIll));
+          }
+
+          if (patientPredictedHealth == 1) {
+            rect(
+              healthyGroupX,
+              patientHeightSlider.y +
+                15 +
+                15 +
+                healthyGroupLastIndex * distanceBetweenElementsOfList,
+              5,
+              distanceBetweenElementsOfList
+            );
+
+            text(
+              index,
+              healthyGroupX + 8,
+              patientHeightSlider.y +
+                15 +
+                15 +
+                15 +
+                healthyGroupLastIndex * distanceBetweenElementsOfList
+            );
+            healthyGroupLastIndex++;
+          }
+
+          if (patientPredictedHealth == 0) {
+            rect(
+              illGroupX,
+              patientHeightSlider.y +
+                15 +
+                15 +
+                illGroupLastIndex * distanceBetweenElementsOfList,
+              5,
+              distanceBetweenElementsOfList
+            );
+            text(
+              index,
+              illGroupX + 8,
+              patientHeightSlider.y +
+                15 +
+                15 +
+                15 +
+                illGroupLastIndex * distanceBetweenElementsOfList
+            );
+            illGroupLastIndex++;
+          }
+
+          fill(0, 0, 0);
+        });
+      }
+    });
+  }
 }
